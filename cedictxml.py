@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import re
 import time
 import argparse
@@ -277,11 +278,11 @@ def createxdxf(dictionary):
         abbrlist.append(tupple[0])
     # Get the description from the original header and add information about
     # the conversion.
-    conversion_info = ("_lb_This XDXF file was created automatically by the "
-                       "CedictXML converter, version %s on %s._lb_CedictXML "
+    conversion_info = ("\n \nThis XDXF file was created automatically by the "
+                       "CedictXML converter, version %s on %s.\nCedictXML "
                        "is free and unencumbered software released into the "
                        "public domain." % (version, currenttime))
-    description = dictionary["header"].replace("\n", "_lb_") + conversion_info
+    description = dictionary["header"].replace("\n", "&#13;") + conversion_info
     xdxfdic_top = ET.Element("xdxf", lang_from="CHI", lang_to="ENG",
                              format="logical", revision="33")
     # Header is no longer needed, only dictionary entries should be left.
@@ -449,3 +450,5 @@ else:
     output_file = "CC-CEDICT_" + dictionary_version + ".xdxf"
 open(output_file, "w", encoding="utf8").write(xdxf_result)
 print("\nSuccess! The CC-CEDICT file was converted to \"%s\"." % output_file)
+
+os.system("dictzip.exe -k " + output_file )
