@@ -6,6 +6,7 @@ import re
 import time
 import argparse
 import zipfile
+import gzip
 import urllib.request
 import tempfile
 from tqdm import tqdm
@@ -15,6 +16,7 @@ from pinyin import pinyinize
 
 
 version = "1.3"
+chi_lang2 = "ENG"
 dictionaryname = "CC-CEDICT"
 currenttime = time.strftime("%d-%m-%Y %H:%M:%S", time.localtime())
 dtd_url = "https://raw.github.com/soshial/xdxf_makedict/master/format_standard/xdxf_strict.dtd"
@@ -141,6 +143,7 @@ def dictconvert(dictionaryfile):
     """
     linenum = int(0)
     header = str()
+    headerfound = int(0)
     for line in tqdm(dictionaryfile.split("\n"), unit=" entries"):
         linenum = linenum + 1
         # So that if something goes wrong we know which line is causing the
@@ -148,8 +151,12 @@ def dictconvert(dictionaryfile):
         try:
             # Get the header.
             if line.startswith("#"):
-                header = header + line[2:]
+                if 0==headerfound or 1==linenum:
+                     header = header + line[2:].strip()+"\r"
+            elif not len(line):
+                headerfound = int(1)
             else:
+                headerfound = int(1)
                 # Get the four main parts of each entry.
                 entry_fan = re.findall("^(.+?) ", line)[0]
                 entry_jian = re.findall("^.+? (.+?) ", line)[0]
@@ -283,7 +290,7 @@ def createxdxf(dictionary):
                        "is free and unencumbered software released into the "
                        "public domain." % (version, currenttime))
     description = dictionary["header"].replace("\n", "&#13;") + conversion_info
-    xdxfdic_top = ET.Element("xdxf", lang_from="CHI", lang_to="ENG",
+    xdxfdic_top = ET.Element("xdxf", lang_from="CHI", lang_to=chi_lang2,
                              format="logical", revision="33")
     # Header is no longer needed, only dictionary entries should be left.
     del dictionary["header"]
@@ -400,10 +407,12 @@ def multi_replace(inputstring, replacements):
 
 # Set and parse arguments.
 argparser = argparse.ArgumentParser()
-argparser.add_argument("-i", "--input-file", help="Original CC-CEDICT file to"
+argparser.add_argument("-i", "--input-file", help="Original CC-CEDICT format  file to"
                                                   " be converted.")
 argparser.add_argument("-o", "--output-file", help="Resulting XDXF-format "
                                                    "file.")
+argparser.add_argument("-n", "--name", help="XDXF-name ")
+argparser.add_argument("-l", "--lang-to", help="CHI to ......")
 argparser.add_argument("-d", "--download", help="Download the most recent "
                                                 "release of CC-CEDICT and use"
                                                 " it as input file.",
@@ -416,6 +425,10 @@ if args.input_file and args.download:
     print("It's not possible to select an input file and to download the most "
           "recent version.")
     exit()
+if args.lang_to:
+    chi_lang2 = args.lang_to
+if args.name:
+    dictionaryname = args.name
 if args.input_file:
     input_file = args.input_file
 elif args.download:
@@ -425,7 +438,14 @@ else:
     input_file = "cedict_ts.u8"
 if args.input_file or not (args.download or args.input_file):
     try:
-        cedictfile = open(input_file, "r", encoding="utf-8").read()
+        if  zipfile.is_zipfile(input_file):
+            zipped_xdict = zipfile.ZipFile(input_file, 'r')
+            cedictfile = zipped_xdict.open(zipped_xdict.namelist()[0]).read().decode('utf8')
+        elif input_file.endswith(".gz"):
+            zipped_xdict = gzip.GzipFile(input_file, 'r')
+            cedictfile = zipped_xdict.read().decode('utf-8-sig')
+        else:
+            cedictfile = open(input_file, "r", encoding="utf8").read()
     except:
         print("No CC-CEDICT file was found on this "
               "location (\"%s\").") % input_file
@@ -447,8 +467,8 @@ xdxf_result = multi_replace(xdxf_result, [("_lb_", "<br/>"), ("_lt_", "<"),
 if args.output_file:
     output_file = args.output_file
 else:
-    output_file = "CC-CEDICT_" + dictionary_version + ".xdxf"
+    output_file = "CC-CEDICT.xdxf"
 open(output_file, "w", encoding="utf8").write(xdxf_result)
-print("\nSuccess! The CC-CEDICT file was converted to \"%s\"." % output_file)
+print("\nSuccess! The CC-CEDICT format file was converted to \"%s\"." % output_file)
 
 os.system("dictzip.exe -k " + output_file )
