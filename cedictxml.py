@@ -465,9 +465,9 @@ xdxf_result = ET.tostring(xdxfdic, encoding="utf-8", pretty_print=True,
 xdxf_result = multi_replace(xdxf_result, [("_lb_", "<br/>"), ("_lt_", "<"),
                             ("_mt_", ">")])
 if args.output_file:
-    output_file = args.output_file
+    output_file = args.output_file + "-" + time.strftime("%Y%m%d%H%M%S", time.localtime()) + ".xdxf"
 else:
-    output_file = "CC-CEDICT.xdxf"
+    output_file = "CC-CEDICT-" + time.strftime("%Y%m%d%H%M%S", time.localtime()) + ".xdxf"
 open(output_file, "w", encoding="utf8").write(xdxf_result)
 print("\nSuccess! The CC-CEDICT format file was converted to \"%s\"." % output_file)
 
