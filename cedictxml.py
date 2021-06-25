@@ -341,9 +341,9 @@ def createxdxf(dictionary):
                                                       "tr").text = value["entry_taiwan"]
         if value.get("entry_measureword") is not None:
             # Reassemble the measure words into a string.
-            measurewords = "Measure words:"
-            for item in value["entry_measureword"]:
-                measurewords = measurewords + " " + item
+            measurewords = "Measure words: " + ", ".join(value["entry_measureword"])
+            # for item in value["entry_measureword"]:
+            #     measurewords = measurewords + " " + item
             lexicon_ar_def_mw = ET.SubElement(lexicon_ar_def,
                                               "gr").text = measurewords
         for translation in value["entry_translation"]:
